@@ -1,5 +1,11 @@
-from fastflow.common import _Plane
+from __future__ import annotations
+
+class Plane:
+    XY: Plane
+    YZ: Plane
+    ZX: Plane
+
 
 def find(
-    g: list[set[int]], iset: set[int], oset: set[int], plane: dict[int, _Plane]
+    g: list[set[int]], iset: set[int], oset: set[int], plane: dict[int, Plane]
 ) -> tuple[dict[int, set[int]], list[int]] | None: ...

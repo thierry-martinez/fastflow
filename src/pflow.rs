@@ -4,9 +4,6 @@ use std::iter;
 
 use fixedbitset::FixedBitSet;
 use hashbrown;
-use num_derive::FromPrimitive;
-use num_enum::IntoPrimitive;
-use num_traits::cast::FromPrimitive;
 use pyo3::prelude::*;
 
 use crate::{
@@ -18,10 +15,11 @@ use crate::{
     },
 };
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug, FromPrimitive, IntoPrimitive)]
+#[pyclass(eq, eq_int, frozen, hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 #[repr(u8)]
 /// Measurement planes or Pauli index.
-enum PPlane {
+pub enum PPlane {
     XY = 0,
     YZ = 1,
     ZX = 2,
@@ -30,7 +28,6 @@ enum PPlane {
     Z = 5,
 }
 
-type InternalPPlanes = hashbrown::HashMap<usize, u8>;
 type PPlanes = hashbrown::HashMap<usize, PPlane>;
 type PFlow = hashbrown::HashMap<usize, Nodes>;
 
@@ -114,14 +111,6 @@ fn check_definition(f: &PFlow, layer: &Layer, g: &Graph, pplanes: &PPlanes) -> a
         }
     }
     Ok(())
-}
-
-/// Decodes the internal representation.
-fn from_internal(pplanes: InternalPPlanes) -> PPlanes {
-    pplanes
-        .into_iter()
-        .map(|(k, v)| (k, PPlane::from_u8(v).expect("pplane is in 0..6")))
-        .collect::<PPlanes>()
 }
 
 /// Sellects nodes from `src` with `pred`.
@@ -335,11 +324,10 @@ pub fn find(
     g: Graph,
     iset: Nodes,
     oset: Nodes,
-    pplanes: InternalPPlanes,
+    pplanes: PPlanes,
 ) -> Option<(PFlow, Layer)> {
     log::debug!("pflow::find");
     validate::check_graph(&g, &iset, &oset).unwrap();
-    let pplanes = from_internal(pplanes);
     let yset = matching_nodes(&pplanes, |pp| matches!(pp, PPlane::Y));
     let xyset = matching_nodes(&pplanes, |pp| matches!(pp, PPlane::X | PPlane::Y));
     let yzset = matching_nodes(&pplanes, |pp| matches!(pp, PPlane::Y | PPlane::Z));

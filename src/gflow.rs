@@ -4,9 +4,6 @@ use std::iter;
 
 use fixedbitset::FixedBitSet;
 use hashbrown;
-use num_derive::FromPrimitive;
-use num_enum::IntoPrimitive;
-use num_traits::cast::FromPrimitive;
 use pyo3::prelude::*;
 
 use crate::{
@@ -18,16 +15,16 @@ use crate::{
     },
 };
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug, FromPrimitive, IntoPrimitive)]
+#[pyclass(eq, eq_int)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 #[repr(u8)]
 /// Measurement plane.
-enum Plane {
+pub enum Plane {
     XY = 0,
     YZ = 1,
     ZX = 2,
 }
 
-type InternalPlanes = hashbrown::HashMap<usize, u8>;
 type Planes = hashbrown::HashMap<usize, Plane>;
 type GFlow = hashbrown::HashMap<usize, Nodes>;
 
@@ -86,14 +83,6 @@ fn check_definition(f: &GFlow, layer: &Layer, g: &Graph, planes: &Planes) -> any
         }
     }
     Ok(())
-}
-
-/// Decodes the internal representation.
-fn from_internal(planes: InternalPlanes) -> Planes {
-    planes
-        .into_iter()
-        .map(|(k, v)| (k, Plane::from_u8(v).expect("plane is either 0, 1, or 2")))
-        .collect::<Planes>()
 }
 
 /// Initializes the working matrix.
@@ -159,10 +148,9 @@ fn init_work(
 /// - Arguments are **NOT** verified.
 #[pyfunction]
 #[allow(clippy::needless_pass_by_value, clippy::must_use_candidate)]
-pub fn find(g: Graph, iset: Nodes, oset: Nodes, planes: InternalPlanes) -> Option<(GFlow, Layer)> {
+pub fn find(g: Graph, iset: Nodes, oset: Nodes, planes: Planes) -> Option<(GFlow, Layer)> {
     log::debug!("gflow::find");
     validate::check_graph(&g, &iset, &oset).unwrap();
-    let planes = from_internal(planes);
     let n = g.len();
     let vset = (0..n).collect::<Nodes>();
     let mut cset = Nodes::new();
